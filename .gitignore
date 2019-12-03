@@ -1,6 +1,9 @@
 # Ignore SublimeText workspace
 *.sublime-workspace
 
+# Ignore VS Code workspace
+*.vscode
+
 # Ignore mac Finder stuff
 .DS_Store
 

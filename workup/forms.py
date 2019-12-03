@@ -13,6 +13,7 @@ from crispy_forms.utils import TEMPLATE_PACK, render_field
 
 from pttrack.models import Provider, ProviderType
 from . import models
+from . import check_connection
 
 
 def form_required_if(form, conditional, fields):
@@ -236,6 +237,8 @@ class WorkupForm(ModelForm):
         given)."""
 
         cleaned_data = super(WorkupForm, self).clean()
+
+        check_connection()
 
         # we allow specification of units when the measurement is not given
         # because you cannot uncheck radios and the converter methods accept
