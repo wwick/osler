@@ -172,6 +172,7 @@ class WorkupForm(ModelForm):
 
         self.helper = FormHelper()
         self.helper.form_method = 'post'
+        self.helper.form_id = 'id-workup-form'
 
         self.helper.layout = Layout(
             Row(HTML('<h3>Clinical Team</h3>'),
@@ -237,8 +238,6 @@ class WorkupForm(ModelForm):
         given)."""
 
         cleaned_data = super(WorkupForm, self).clean()
-
-        check_connection()
 
         # we allow specification of units when the measurement is not given
         # because you cannot uncheck radios and the converter methods accept

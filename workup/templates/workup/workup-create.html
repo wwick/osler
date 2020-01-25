@@ -19,3 +19,32 @@
 </div>
 
 {% endblock %}
+
+{% block extra_js %}
+
+
+<script>
+
+const workup_form = '#id-workup-form';
+const submit_button = '#submit-id-submit';
+let success = false;
+$(workup_form).on('submit', function(event) {
+  if (!success) {
+    event.preventDefault();
+    $.ajax({
+        type:"GET",
+        url: '/api/time',
+        success: function(response) {
+          success = true;
+          $(submit_button).click();
+        },
+        error: function(error) {
+          alert("check VPN connection");
+        },
+    });
+  }
+});
+
+</script>
+
+{% endblock %}

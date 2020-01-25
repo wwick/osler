@@ -9,6 +9,10 @@ from workup import models as workupmodels
 
 from . import serializers
 
+import datetime
+
+from django.http import HttpResponse
+
 
 def active_patients_filter(qs):
     '''Filter a queryset of patients for those that are listed as
@@ -36,6 +40,9 @@ def active_ai_patients_filter(qs):
         .distinct()
         # .order_by('-actionitem__due_date')
 
+def check_connection(qs):
+    now = datetime.datetime.now()
+    return HttpResponse(now)
 
 def inactive_ai_patients_filter(qs):
     '''Build a queryset of patients for those that have active action
