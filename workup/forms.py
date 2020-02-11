@@ -13,8 +13,6 @@ from crispy_forms.utils import TEMPLATE_PACK, render_field
 
 from pttrack.models import Provider, ProviderType
 from . import models
-from . import check_connection
-
 
 def form_required_if(form, conditional, fields):
     """Adds an error to the form if conditional is truthy-false and any
@@ -172,7 +170,7 @@ class WorkupForm(ModelForm):
 
         self.helper = FormHelper()
         self.helper.form_method = 'post'
-        self.helper.form_id = 'id-workup-form'
+        self.helper.form_class = 'check-connection'
 
         self.helper.layout = Layout(
             Row(HTML('<h3>Clinical Team</h3>'),
@@ -229,7 +227,7 @@ class WorkupForm(ModelForm):
                     css_class='col-xs-6')
                 ),
 
-            Submit('submit', 'Save', css_class='btn btn-success')
+            Submit('workup', 'Save', css_class='btn btn-success')
         )
 
     def clean(self):
@@ -289,7 +287,8 @@ class ProgressNoteForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super(ProgressNoteForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
-        self.helper.add_input(Submit('submit', 'Submit'))
+        self.helper.form_class = 'check-connection'
+        self.helper.add_input(Submit('workup', 'Submit'))
 
 
 class ClinicDateForm(ModelForm):
@@ -307,4 +306,4 @@ class ClinicDateForm(ModelForm):
         self.helper.label_class = 'col-lg-2'
         self.helper.field_class = 'col-lg-8'
 
-        self.helper.add_input(Submit('submit', 'Submit'))
+        self.helper.add_input(Submit('workup', 'Submit'))
