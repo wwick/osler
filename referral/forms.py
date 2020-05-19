@@ -18,7 +18,8 @@ class ReferralForm(ModelForm):
         self.helper = FormHelper(self)
         self.fields['location'].widget = forms.widgets.CheckboxSelectMultiple()
         self.fields['location'].queryset = referral_location_qs
-        self.helper.add_input(Submit('submit', 'Create referral'))
+        self.helper.add_input(Submit('referral', 'Create referral'))
+        self.helper.form_class = 'check-connection'
 
 
 class FollowupRequestForm(ModelForm):

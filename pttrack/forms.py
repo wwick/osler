@@ -122,7 +122,8 @@ class DocumentForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super(DocumentForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
-        self.helper.add_input(Submit('submit', 'Submit'))
+        self.helper.add_input(Submit('document', 'Submit'))
+        self.helper.form_class = 'check-connection'
 
 
 class CrispyAuthenticationForm(AuthenticationForm):
