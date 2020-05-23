@@ -2,3 +2,10 @@
 *
 # Except this file
 !.gitignore
+
+# And check-connection
+!workup/
+workup/*
+!workup/js
+workup/js/*
+!workup/js/check-connection.js
