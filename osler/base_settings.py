@@ -136,3 +136,7 @@ OSLER_DEFAULT_DASHBOARD = 'home'
 OSLER_PROVIDERTYPE_DASHBOARDS = {
     'Attending': 'dashboard-attending'
 }
+
+# hooks to enable overriding in tests
+# these values should never change in development or production
+TEST_CHECK_CONNECTION_RUNNING = False

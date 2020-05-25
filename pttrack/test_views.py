@@ -390,7 +390,13 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
             'preclinical': preclinical
         }
 
+        # create a clinic type
         workupModels.ClinicType.objects.create(name="Basic Care Clinic")
+                
+        # Create a diagnosis type
+        workupModels.DiagnosisType.objects.create(
+            name='Cardiovascular'
+            )
 
         # various time references used in object creation
         tomorrow = now().date() + datetime.timedelta(days=1)
@@ -456,6 +462,8 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
         )
         self.pt5.case_managers.add(coordinator)
 
+
+
         wu_prototype = {
             'chief_complaint': "SOB", 'diagnosis': "MI",
             'HPI': "", 'PMH_PSH': "", 'meds': "", 'allergies': "",
@@ -518,76 +526,71 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
         self.submit_login(self.providers['coordinator'].username,
                           self.provider_password)
 
-        # navigate to new workup page
+        # navigate to new workup page (redirected to select clinic type)
         self.selenium.get(
             '%s%s' % (self.live_server_url, reverse('new-workup', kwargs={'pt_id': 1})))
         
-
-
         # selects first option for clinic type
         clinic_type = Select(self.selenium.find_element_by_name('clinic_type'))
         clinic_type.select_by_visible_text('Basic Care Clinic')
 
         # navigates to actual workup page
-        submit_button = self.selenium.find_element_by_id('submit-id-workup')
+        submit_button_id = 'submit-id-workup'
+        submit_button = self.selenium.find_element_by_id(submit_button_id)
         submit_button.click()
 
-        # check that form class is set correctly (exception is thrown if element is not found)
-        form = self.selenium.find_element_by_xpath("//div[@class='container']/form[@class='check-connection']")
+        # define workup content
+        wu_prototype = {
+            'chief_complaint': "SOB",
+            'diagnosis': "MI",
+            'HPI': "history of present illness", 
+            'PMH_PSH': "past medical history", 
+            'meds': "lipitor", 
+            'allergies': "peanuts",
+            'fam_hx': "family history", 
+            'soc_hx': "social history",
+            'ros': "review of systems", 
+            'pe': "physical examination", 
+            'A_and_P': "assessment and plan",
+        }
 
-        # check that check connection script exists on page
-        script = self.selenium.find_element_by_id("check-connection-script")
+        # set workup content
+        for field in wu_prototype:
+            element = self.selenium.find_element_by_name(field)
+            element.clear()
+            element.send_keys(wu_prototype[field])
 
-        # check that submit button name is not submit; otherwise, check connection script will fail
-        submit_button = self.selenium.find_element_by_id('submit-id-workup')
-        submit_button_name = submit_button.get_attribute("name")
-        self.assertNotEqual(submit_button_name, 'submit')
+        # selects first option for diagnosis category
+        dx_category_id = 'id_diagnosis_categories_1'
+        dx_category = self.selenium.find_element_by_id(dx_category_id)
+        # clicking throws an exception since checkbox is out of view
+        # sending a space registers as a click
+        dx_category.send_keys(' ')
 
+        # check_connection() should give 408 error, stopping page redirect
+        with self.settings(TEST_CHECK_CONNECTION_RUNNING = True):
 
+            # submit form while simulating lost connection
+            submit_button = self.selenium.find_element_by_id(submit_button_id)
+            submit_button.click()
 
+            # check that page contents have been saved
+            for field in wu_prototype:
+                try:
+                    element = self.selenium.find_element_by_name(field)
+                    value = element.get_attribute('value')
+                    self.assertEquals(value, wu_prototype[field])
+                # the alert box appeared, so repeat the test
+                except:
+                    # close the alert box in case it's still there
+                    try:
+                        self.selenium.switch_to.alert.accept()
+                    except:
+                        pass
+                    element = self.selenium.find_element_by_name(field)
+                    value = element.get_attribute('value')
+                    self.assertEquals(value, wu_prototype[field])
 
-        # # define workup content
-        # wu_prototype = {
-        #     'chief_complaint': "SOB",
-        #     'diagnosis': "MI",
-        #     'HPI': "history of present illness", 
-        #     'PMH_PSH': "past medical history", 
-        #     'meds': "lipitor", 
-        #     'allergies': "peanuts",
-        #     'fam_hx': "family history", 
-        #     'soc_hx': "social history",
-        #     'ros': "review of systems", 
-        #     'pe': "physical examination", 
-        #     'A_and_P': "assessment and plan",
-        # }
-
-
-        # # set workup content
-        # for field in wu_prototype:
-        #     element = self.selenium.find_element_by_name(field)
-        #     element.clear()
-        #     element.send_keys(wu_prototype[field])
-        
-        # # selects first option for clinic day
-        # clinic_day = Select(self.selenium.find_element_by_name('clinic_day'))
-        # clinic_day.select_by_index(0)
-
-        # # selects first option for diagnosis category
-        # dx_category_id = 'id_diagnosis-categories_1'
-        # self.selenium.find_element_by_id(dx_category_id).click()
-
-        # # submit form while simulating lost connection
-        # submit_button = self.selenium.find_element_by_id('submit-id-workup')
-        # # should ideally 
-        # self.selenium.set_page_load_timeout(0)
-        # submit_button.click()
-        # self.selenium.set_page_load_timeout(30)
-
-        # # check that fields have been saved
-        # for field in wu_prototype:
-        #     element = self.selenium.find_element_by_name(field)
-        #     value = element.get_attribute('value')
-        #     self.assertEquals(value, wu_prototype[field])
 
 
     def test_attestation_column(self):

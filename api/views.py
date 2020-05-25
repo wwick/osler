@@ -12,6 +12,7 @@ from . import serializers
 import datetime
 
 from django.http import HttpResponse
+from django.conf import settings
 
 
 def active_patients_filter(qs):
@@ -40,7 +41,15 @@ def active_ai_patients_filter(qs):
         .distinct()
         # .order_by('-actionitem__due_date')
 
+# returns current time to verify server connection
 def check_connection(qs):
+
+    # used in tests to simulate a lost VPN connection, 
+    # by overriding the TEST_CHECK_CONNECTION_RUNNING setting
+    # in production, this endpoint should never deliberately fail
+    if settings.TEST_CHECK_CONNECTION_RUNNING:
+        return HttpResponse(status = 408)
+
     now = datetime.datetime.now()
     return HttpResponse(now)
 
