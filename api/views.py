@@ -21,8 +21,6 @@ def active_patients_filter(qs):
     giving care on a particular clinic day (to hide the giant list of
     pts).
     '''
-
-    print('hi')
     return qs.filter(needs_workup__exact=True).order_by('last_name')
 
 
