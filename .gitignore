@@ -70,4 +70,6 @@ db.sqlite3
 
 # Exported csv
 ptstats.csv
+
+# Temp File
 tmp.html

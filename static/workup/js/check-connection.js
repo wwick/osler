@@ -1,20 +1,38 @@
-const workup_form = '.check-connection'
-$(workup_form).on('submit', function(event) {
-  event.preventDefault()
-  // "this" would be the {} object, so save the variable
-  let form = this
-  $.ajax({
-    type:"GET",
-    url: '/api/time',
-    success: function() {
-      // call submit on the DOM element, rather than the jquery selection
-      // doing the latter triggers submit event handlers, and would be a recursive call (https://api.jquery.com/trigger/#trigger1)
-      // triggering on the DOM element does not (https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/submit). this bypasses some HTML-based constraint validation as described, but we do those validations via Django.
-      // https://stackoverflow.com/questions/6022777/recursive-jquery-submit-function-doesnt-submit-the-form#answer-6023334
-      form.submit()
-    },
-    error: function() {
-      alert("check VPN and internet connection")
-    },
+const check_connection_class = '.check-connection'
+const alert_message = 'check VPN and internet connection'
+
+/**
+ * Checks that server connection is stable before redirecting in order to 
+ * prevent losing form data.
+ * 
+ * To implement a connection check for a form, ensure the following:
+ * 
+ * - the template contains this script
+ * - the relevant form is of class 'check-connection'
+ * - the name argument to the Crispy Forms Submit class is not 'submit',
+ *   i.e., self.helper.add_input(Submit('submit', 'Submit')) should instead be
+ *   self.helper.add_input(Submit('submit-button', 'Submit'))
+ */
+function add_connection_check() {
+  $(check_connection_class).on('submit', function(event) {
+    event.preventDefault()
+    let form = this
+    $.ajax({
+      type: 'GET',
+      url: '/api/time',
+      success: function() {
+        // call submit on the DOM element, rather than the jquery selection, to avoid a recursive call
+        form.submit()
+      },
+      error: function() {
+        alert(alert_message)
+      },
+    });
   });
-});
+}
+
+add_connection_check()
+
+
+
+

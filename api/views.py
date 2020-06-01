@@ -39,14 +39,17 @@ def active_ai_patients_filter(qs):
         .distinct()
         # .order_by('-actionitem__due_date')
 
-# returns current time to verify server connection
 def check_connection(qs):
+    '''
+    Returns current time to verify server connection.
+    '''
 
     # used in tests to simulate a lost VPN connection, 
     # by overriding the TEST_CHECK_CONNECTION_RUNNING setting
     # in production, this endpoint should never deliberately fail
     if settings.TEST_CHECK_CONNECTION_RUNNING:
-        return HttpResponse(status = 408)
+        request_timeout_error = 408
+        return HttpResponse(status = request_timeout_error)
 
     now = datetime.datetime.now()
     return HttpResponse(now)

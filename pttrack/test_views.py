@@ -22,29 +22,15 @@ from selenium.webdriver.support.ui import Select
 from . import models
 from .test import SeleniumLiveTestCase
 from workup import models as workupModels
+from workup.forms import WorkupForm
 from followup.models import ContactResult
 from referral.models import Referral, FollowupRequest, PatientContact
 from referral.forms import PatientContactForm
-
-# from contextlib import ContextDecorator
 
 # pylint: disable=invalid-name
 # Whatever, whatever. I name them what I want.
 
 BASIC_FIXTURE = 'pttrack.json'
-
-class BrowserTimeout:
-
-    def __init__(self, driver, time):
-        self.driver = driver
-        self.time = time
-
-    def __enter__(self):
-        self.driver.set_page_load_timeout(self.time)
-    
-    def __exit__(self):
-        self.driver.set_page_load_timeout(30)
-
 
 def note_check(test, note, client, pt_pk):
     '''
@@ -517,14 +503,20 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
             patient=self.pt3,
             **ai_prototype)
 
-    # waits 0 seconds to perform actions in order to simulate
-    # lost internet connection
-    def test_check_connection(self):
-
-        # enter login information
+    def login(self):
+        '''enter login information'''
         self.selenium.get('%s%s' % (self.live_server_url, '/'))
         self.submit_login(self.providers['coordinator'].username,
                           self.provider_password)
+
+
+    def test_check_connection(self):
+        '''
+        Verify that when submitting a workup form under a faulty connection,
+        form contents are saved.
+        '''
+
+        self.login()
 
         # navigate to new workup page (redirected to select clinic type)
         self.selenium.get(
@@ -535,7 +527,7 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
         clinic_type.select_by_visible_text('Basic Care Clinic')
 
         # navigates to actual workup page
-        submit_button_id = 'submit-id-workup'
+        submit_button_id = 'submit-id-' + WorkupForm.submit_button_name
         submit_button = self.selenium.find_element_by_id(submit_button_id)
         submit_button.click()
 
@@ -567,7 +559,8 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
         # sending a space registers as a click
         dx_category.send_keys(' ')
 
-        # check_connection() should give 408 error, stopping page redirect
+        # check_connection() should give 408 error, triggering fail branch in javascript,
+        # and stopping page redirect
         with self.settings(TEST_CHECK_CONNECTION_RUNNING = True):
 
             # submit form while simulating lost connection
@@ -591,13 +584,60 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
                     value = element.get_attribute('value')
                     self.assertEquals(value, wu_prototype[field])
 
+    def test_check_connection_progress_note(self):
+        '''
+        Verify that when submitting a progress note under a faulty connection,
+        form contents are saved.
+        '''
+
+        self.login()
+
+        # navigate to new workup page (redirected to select clinic type)
+        self.selenium.get(
+            '%s%s' % (self.live_server_url, reverse('new-progress-note', kwargs={'pt_id': 1})))
+
+        # define workup content
+        wu_prototype = {
+            'title': "title",
+            'text': "text",
+        }
+
+        # set workup content
+        for field in wu_prototype:
+            element = self.selenium.find_element_by_name(field)
+            element.clear()
+            element.send_keys(wu_prototype[field])
+
+        # check_connection() should give 408 error, triggering fail branch in javascript,
+        # and stopping page redirect
+        with self.settings(TEST_CHECK_CONNECTION_RUNNING = True):
+
+            # submit form while simulating lost connection
+            submit_button_id = 'submit-id-' + WorkupForm.submit_button_name
+            submit_button = self.selenium.find_element_by_id(submit_button_id)
+            submit_button.click()
+
+            # check that page contents have been saved
+            for field in wu_prototype:
+                try:
+                    element = self.selenium.find_element_by_name(field)
+                    value = element.get_attribute('value')
+                    self.assertEquals(value, wu_prototype[field])
+                # the alert box appeared, so repeat the test
+                except:
+                    # close the alert box in case it's still there
+                    try:
+                        self.selenium.switch_to.alert.accept()
+                    except:
+                        pass
+                    element = self.selenium.find_element_by_name(field)
+                    value = element.get_attribute('value')
+                    self.assertEquals(value, wu_prototype[field])
 
 
     def test_attestation_column(self):
 
-        self.selenium.get('%s%s' % (self.live_server_url, '/'))
-        self.submit_login(self.providers['coordinator'].username,
-                          self.provider_password)
+        self.login()
 
         self.selenium.get(
             '%s%s' % (self.live_server_url, reverse("all-patients")))
@@ -617,9 +657,7 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
 
     def test_all_patients_correct_order(self):
 
-        self.selenium.get('%s%s' % (self.live_server_url, '/'))
-        self.submit_login(self.providers['coordinator'].username,
-                          self.provider_password)
+        self.login()
 
         self.selenium.get('%s%s' % (self.live_server_url,
                                     reverse("all-patients")))
@@ -710,9 +748,7 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
             - Searching for a coordinator's name
         """
 
-        self.selenium.get('%s%s' % (self.live_server_url, '/'))
-        self.submit_login(self.providers['coordinator'].username,
-                          self.provider_password)
+        self.login()
         self.selenium.get(
             '%s%s' % (self.live_server_url, reverse("all-patients")))
 
