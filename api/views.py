@@ -45,9 +45,9 @@ def check_connection(qs):
     '''
 
     # used in tests to simulate a lost VPN connection, 
-    # by overriding the TEST_CHECK_CONNECTION_RUNNING setting
+    # by overriding the OSLER_TEST_CHECK_CONNECTION_RUNNING setting
     # in production, this endpoint should never deliberately fail
-    if settings.TEST_CHECK_CONNECTION_RUNNING:
+    if settings.OSLER_TEST_CHECK_CONNECTION_RUNNING:
         request_timeout_error = 408
         return HttpResponse(status = request_timeout_error)
 

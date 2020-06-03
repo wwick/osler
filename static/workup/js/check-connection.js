@@ -32,7 +32,3 @@ function add_connection_check() {
 }
 
 add_connection_check()
-
-
-
-

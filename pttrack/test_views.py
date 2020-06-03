@@ -561,7 +561,7 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
 
         # check_connection() should give 408 error, triggering fail branch in javascript,
         # and stopping page redirect
-        with self.settings(TEST_CHECK_CONNECTION_RUNNING = True):
+        with self.settings(OSLER_TEST_CHECK_CONNECTION_RUNNING = True):
 
             # submit form while simulating lost connection
             submit_button = self.selenium.find_element_by_id(submit_button_id)
@@ -610,7 +610,7 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
 
         # check_connection() should give 408 error, triggering fail branch in javascript,
         # and stopping page redirect
-        with self.settings(TEST_CHECK_CONNECTION_RUNNING = True):
+        with self.settings(OSLER_TEST_CHECK_CONNECTION_RUNNING = True):
 
             # submit form while simulating lost connection
             submit_button_id = 'submit-id-' + WorkupForm.submit_button_name

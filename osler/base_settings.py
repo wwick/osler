@@ -139,4 +139,4 @@ OSLER_PROVIDERTYPE_DASHBOARDS = {
 
 # hooks to enable overriding in tests
 # these values should never change in development or production
-TEST_CHECK_CONNECTION_RUNNING = False
+OSLER_TEST_CHECK_CONNECTION_RUNNING = False
