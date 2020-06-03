@@ -509,132 +509,6 @@ class LiveTestPatientLists(SeleniumLiveTestCase):
         self.submit_login(self.providers['coordinator'].username,
                           self.provider_password)
 
-
-    def test_check_connection(self):
-        '''
-        Verify that when submitting a workup form under a faulty connection,
-        form contents are saved.
-        '''
-
-        self.login()
-
-        # navigate to new workup page (redirected to select clinic type)
-        self.selenium.get(
-            '%s%s' % (self.live_server_url, reverse('new-workup', kwargs={'pt_id': 1})))
-        
-        # selects first option for clinic type
-        clinic_type = Select(self.selenium.find_element_by_name('clinic_type'))
-        clinic_type.select_by_visible_text('Basic Care Clinic')
-
-        # navigates to actual workup page
-        submit_button_id = 'submit-id-' + WorkupForm.submit_button_name
-        submit_button = self.selenium.find_element_by_id(submit_button_id)
-        submit_button.click()
-
-        # define workup content
-        wu_prototype = {
-            'chief_complaint': "SOB",
-            'diagnosis': "MI",
-            'HPI': "history of present illness", 
-            'PMH_PSH': "past medical history", 
-            'meds': "lipitor", 
-            'allergies': "peanuts",
-            'fam_hx': "family history", 
-            'soc_hx': "social history",
-            'ros': "review of systems", 
-            'pe': "physical examination", 
-            'A_and_P': "assessment and plan",
-        }
-
-        # set workup content
-        for field in wu_prototype:
-            element = self.selenium.find_element_by_name(field)
-            element.clear()
-            element.send_keys(wu_prototype[field])
-
-        # selects first option for diagnosis category
-        dx_category_id = 'id_diagnosis_categories_1'
-        dx_category = self.selenium.find_element_by_id(dx_category_id)
-        # clicking throws an exception since checkbox is out of view
-        # sending a space registers as a click
-        dx_category.send_keys(' ')
-
-        # check_connection() should give 408 error, triggering fail branch in javascript,
-        # and stopping page redirect
-        with self.settings(OSLER_TEST_CHECK_CONNECTION_RUNNING = True):
-
-            # submit form while simulating lost connection
-            submit_button = self.selenium.find_element_by_id(submit_button_id)
-            submit_button.click()
-
-            # check that page contents have been saved
-            for field in wu_prototype:
-                try:
-                    element = self.selenium.find_element_by_name(field)
-                    value = element.get_attribute('value')
-                    self.assertEquals(value, wu_prototype[field])
-                # the alert box appeared, so repeat the test
-                except:
-                    # close the alert box in case it's still there
-                    try:
-                        self.selenium.switch_to.alert.accept()
-                    except:
-                        pass
-                    element = self.selenium.find_element_by_name(field)
-                    value = element.get_attribute('value')
-                    self.assertEquals(value, wu_prototype[field])
-
-    def test_check_connection_progress_note(self):
-        '''
-        Verify that when submitting a progress note under a faulty connection,
-        form contents are saved.
-        '''
-
-        self.login()
-
-        # navigate to new workup page (redirected to select clinic type)
-        self.selenium.get(
-            '%s%s' % (self.live_server_url, reverse('new-progress-note', kwargs={'pt_id': 1})))
-
-        # define workup content
-        wu_prototype = {
-            'title': "title",
-            'text': "text",
-        }
-
-        # set workup content
-        for field in wu_prototype:
-            element = self.selenium.find_element_by_name(field)
-            element.clear()
-            element.send_keys(wu_prototype[field])
-
-        # check_connection() should give 408 error, triggering fail branch in javascript,
-        # and stopping page redirect
-        with self.settings(OSLER_TEST_CHECK_CONNECTION_RUNNING = True):
-
-            # submit form while simulating lost connection
-            submit_button_id = 'submit-id-' + WorkupForm.submit_button_name
-            submit_button = self.selenium.find_element_by_id(submit_button_id)
-            submit_button.click()
-
-            # check that page contents have been saved
-            for field in wu_prototype:
-                try:
-                    element = self.selenium.find_element_by_name(field)
-                    value = element.get_attribute('value')
-                    self.assertEquals(value, wu_prototype[field])
-                # the alert box appeared, so repeat the test
-                except:
-                    # close the alert box in case it's still there
-                    try:
-                        self.selenium.switch_to.alert.accept()
-                    except:
-                        pass
-                    element = self.selenium.find_element_by_name(field)
-                    value = element.get_attribute('value')
-                    self.assertEquals(value, wu_prototype[field])
-
-
     def test_attestation_column(self):
 
         self.login()
@@ -1535,3 +1409,175 @@ class TestReferralPatientDetailIntegration(TestCase):
         # Verify that the template contains expected PatientContact description
         self.assertContains(response,
                             PatientContact.objects.first().short_text())
+
+
+class TestCheckConnection(SeleniumLiveTestCase):
+    fixtures = [BASIC_FIXTURE]
+
+    def setUp(self):
+        # build a provider and log in
+        self.provider_password = 'password'
+        attending = build_provider(
+            username='timmy_attend',
+            password=self.provider_password,
+            roles=["Attending"])
+        coordinator = build_provider(
+            username='timmy_coord',
+            password=self.provider_password,
+            roles=["Coordinator"])
+        clinical = build_provider(
+            username='timmy_clinical',
+            password=self.provider_password,
+            roles=["Clinical"])
+        preclinical = build_provider(
+            username='timmy_preclin',
+            password=self.provider_password,
+            roles=["Preclinical"])
+        self.providers = {
+            'attending': attending,
+            'coordinator': coordinator,
+            'clinical': clinical,
+            'preclinical': preclinical
+        }
+
+        # create a clinic type
+        workupModels.ClinicType.objects.create(name="Basic Care Clinic")
+                
+        # Create a diagnosis type
+        workupModels.DiagnosisType.objects.create(
+            name='Cardiovascular'
+            )
+
+        pt1 = models.Patient.objects.get(pk=1)
+        pt1.toggle_active_status()
+        pt1.save()
+        self.pt1 = pt1
+
+
+    def login(self):
+        '''Enter login information.'''
+        self.selenium.get('%s%s' % (self.live_server_url, '/'))
+        self.submit_login(self.providers['coordinator'].username,
+                          self.provider_password)
+
+
+    def verify_form_contents(self, form):
+        '''Check that form contents have not changed.'''
+        for field in form:
+            element = self.selenium.find_element_by_name(field)
+            value = element.get_attribute('value')
+            self.assertEquals(value, form[field])
+
+
+    def test_workup_form(self):
+        '''
+        Verify that when submitting a workup form under a faulty connection,
+        form contents are saved.
+        '''
+
+        self.login()
+
+        # navigate to new workup page (redirected to select clinic type)
+        self.selenium.get(
+            '%s%s' % (self.live_server_url, reverse('new-workup', kwargs={'pt_id': 1})))
+        
+        # selects first option for clinic type
+        clinic_type = Select(self.selenium.find_element_by_name('clinic_type'))
+        clinic_type.select_by_visible_text('Basic Care Clinic')
+
+        # navigates to actual workup page
+        submit_button_id = 'submit-id-' + WorkupForm.submit_button_name
+        submit_button = self.selenium.find_element_by_id(submit_button_id)
+        submit_button.click()
+
+        # define workup content
+        workup = {
+            'chief_complaint': "SOB",
+            'diagnosis': "MI",
+            'HPI': "history of present illness", 
+            'PMH_PSH': "past medical history", 
+            'meds': "lipitor", 
+            'allergies': "peanuts",
+            'fam_hx': "family history", 
+            'soc_hx': "social history",
+            'ros': "review of systems", 
+            'pe': "physical examination", 
+            'A_and_P': "assessment and plan",
+        }
+
+        # set workup content
+        for field in workup:
+            element = self.selenium.find_element_by_name(field)
+            element.clear()
+            element.send_keys(workup[field])
+
+        # selects first option for diagnosis category
+        dx_category_id = 'id_diagnosis_categories_1'
+        dx_category = self.selenium.find_element_by_id(dx_category_id)
+        # clicking throws an exception since checkbox is out of view
+        # sending a space registers as a click
+        dx_category.send_keys(' ')
+
+        # check_connection() should give 408 error, triggering fail branch in javascript,
+        # and stopping page redirect
+        with self.settings(OSLER_TEST_CHECK_CONNECTION_RUNNING = True):
+
+            # submit form while simulating lost connection
+            submit_button = self.selenium.find_element_by_id(submit_button_id)
+            submit_button.click()
+
+            try:
+                self.verify_form_contents(workup)
+            # the alert box appeared, so repeat the test
+            except:
+                # close the alert box in case it's still there
+                try:
+                    self.selenium.switch_to.alert.accept()
+                except:
+                    pass
+                self.verify_form_contents(workup)
+
+
+    def test_progress_note(self):
+        '''
+        Verify that when submitting a progress note under a faulty connection,
+        form contents are saved.
+        '''
+
+        self.login()
+
+        # navigate to new workup page (redirected to select clinic type)
+        self.selenium.get(
+            '%s%s' % (self.live_server_url, reverse('new-progress-note', kwargs={'pt_id': 1})))
+
+        # define workup content
+        workup = {
+            'title': "title",
+            'text': "text",
+        }
+
+        # set workup content
+        for field in workup:
+            element = self.selenium.find_element_by_name(field)
+            element.clear()
+            element.send_keys(workup[field])
+
+        # check_connection() should give 408 error, triggering fail branch in javascript,
+        # and stopping page redirect
+        with self.settings(OSLER_TEST_CHECK_CONNECTION_RUNNING = True):
+
+            # submit form while simulating lost connection
+            submit_button_id = 'submit-id-' + WorkupForm.submit_button_name
+            submit_button = self.selenium.find_element_by_id(submit_button_id)
+            submit_button.click()
+
+            try:
+                self.verify_form_contents(workup)
+            # the alert box appeared, so repeat the test
+            except:
+                # close the alert box in case it's still there
+                try:
+                    self.selenium.switch_to.alert.accept()
+                except:
+                    pass
+                self.verify_form_contents(workup)
