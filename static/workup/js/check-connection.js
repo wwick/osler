@@ -19,7 +19,7 @@ function add_connection_check() {
     let form = this
     $.ajax({
       type: 'GET',
-      url: '/api/time',
+      url: '/api/check-connection',
       success: function() {
         // call submit on the DOM element, rather than the jquery selection, to avoid a recursive call
         form.submit()

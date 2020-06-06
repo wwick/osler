@@ -40,19 +40,16 @@ def active_ai_patients_filter(qs):
         # .order_by('-actionitem__due_date')
 
 def check_connection(qs):
-    '''
-    Returns current time to verify server connection.
-    '''
+    '''Returns blank page to verify server connection.'''
 
-    # used in tests to simulate a lost VPN connection, 
-    # by overriding the OSLER_TEST_CHECK_CONNECTION_RUNNING setting
-    # in production, this endpoint should never deliberately fail
+    # Used in tests to simulate a lost VPN connection 
+    # by overriding the OSLER_TEST_CHECK_CONNECTION_RUNNING setting.
+    # In production, this endpoint should never deliberately fail.
     if settings.OSLER_TEST_CHECK_CONNECTION_RUNNING:
         request_timeout_error = 408
         return HttpResponse(status = request_timeout_error)
 
-    now = datetime.datetime.now()
-    return HttpResponse(now)
+    return HttpResponse()
 
 def inactive_ai_patients_filter(qs):
     '''Build a queryset of patients for those that have active action

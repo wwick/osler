@@ -10,7 +10,7 @@ unwrapped_urlpatterns = [  # pylint: disable=invalid-name
     url(r'^pt_list/$',
         views.PtList.as_view(),
         name='pt_list_api'),
-    url(r'^time/$',
+    url(r'^check-connection/$',
         views.check_connection,
         name='check_connection',
     )
